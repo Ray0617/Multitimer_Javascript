@@ -57,10 +57,12 @@ function keydown(e)
 	{
 		case 38:
 			selectPrev();
+			changeId();
 			refresh();
 			break;
 		case 40:
 			selectNext();
+			changeId();
 			refresh();
 			break;
 		default:
