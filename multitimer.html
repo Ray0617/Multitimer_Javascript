@@ -1,13 +1,212 @@
 <html>
 <head>
-<script>
-function startTimer()
+<script type="text/javascript">
+var events = [];
+var clickId = -1;
+var event_template = {"id":"", "time":"", "description":"", "alarm":""};
+function makeEvent(id, ts, desc, alarm)
 {
-	document.getElementById('t').innerHTML = "hello world";
+	return {"id":id, "time":ts, "description":desc, "alarm":alarm};
+}
+function main()
+{
+	setInterval(refresh, 1000);
+}
+function getId()
+{
+	return parseInt(document.getElementById("id").value);
+}
+function setId(id)
+{
+	document.getElementById("id").value = id;
+}
+function getTimestamp()
+{
+	var hh = parseInt(document.getElementById("hh").value);
+	var mm = parseInt(document.getElementById("mm").value);
+	var ss = parseInt(document.getElementById("ss").value);
+	var now = (new Date()).getTime();
+	return now + (3600 * hh + 60 * mm + ss) * 1000;
+}
+function setTimestamp(ts)
+{
+	var now = (new Date()).getTime();
+	var diff = Math.floor((ts - now) / 1000);
+	document.getElementById("hh").value = Math.floor(diff / 3600);
+	document.getElementById("mm").value = Math.floor(diff / 60) % 60;
+	document.getElementById("ss").value = diff % 60;
+}
+function setDescription(desc)
+{
+	document.getElementById("description").value = desc;
+}
+function alertUser(message)
+{
+	if (Notification.permission === "granted")
+	{
+		var notification = new Notification(message);
+	}
+	else
+	{
+		alert(message);
+	}
+}
+function refresh()
+{
+	// every second
+	var now = (new Date()).getTime();
+	var out = "";
+	for (i in events)
+	{
+		var evt = events[i];
+		var diff = (parseInt(events[i]["time"]) - now) / 1000;
+		if (diff <= 0)
+		{
+			diff = 0;
+			if (evt["alarm"] == "false")
+			{
+				alertUser("Timeout: " + evt["description"]);
+				evt["alarm"] = "true";
+			}
+		}
+		out += '<div';
+		out += ' id="' + evt["id"] + '"';
+		out += ' onclick="clickId=' + evt["id"] + '"';
+		if (i == getId())
+			out += ' style="background-color:#b0ffb0"';
+		out += '>';
+		out += Math.floor(diff);
+		out += '<span style="padding-left:5em"/>';
+		out += events[i]["description"];
+		out += '</div>\n';
+	}
+	document.getElementById("list").innerHTML = out;
+}
+function nextInput()
+{
+	document.getElementById("id").value = events.length;
+	document.getElementById("hh").value = "0";
+	document.getElementById("mm").value = "0";
+	document.getElementById("ss").value = "0";
+	document.getElementById("msg").value = "Hello World";
+}
+function cloneInput()
+{
+	var id = getId();
+	if (id >= events.length)
+	{
+		alert("No event is selected");
+		return;
+	}
+	setId(events.length);
+	setTimestamp(parseInt(events[id]["time"]));
+	setDescription(events[id]["description"]);
+	refresh();
+}
+function addInput()
+{
+	var id = getId();
+	var ts = getTimestamp();
+	var des = document.getElementById("msg").value;
+	var alarm = "false";
+	
+	var evt = {"id":id, "time":ts, "description":des, "alarm":alarm};
+	events[id] = evt;
+	refresh();
+}
+function deleteInput()
+{
+	var id = getId();
+	if (id >= events.length)
+	{
+		alert("No event is selected");
+		return;
+	}
+	events.splice(id, 1);
+	refresh();
+}
+function save()
+{
+	if (typeof(Storage) === "undefined")
+	{
+		alert("Storage Not Supported");
+		return;
+	}
+	localStorage.setItem("length", events.length.toString());
+	for (var i in events)
+	{
+		var evt = events[i];
+		localStorage.setItem("id:" + i, evt["id"]);
+		localStorage.setItem("time:" + i, evt["time"]);
+		localStorage.setItem("description:" + i, evt["description"]);
+		localStorage.setItem("alarm:" + i, evt["alarm"]);
+	}
+	refresh();
+}
+function load()
+{
+	if (typeof(Storage) === "undefined")
+	{
+		alert("Storage Not Supported");
+		return;
+	}
+	var len = parseInt(localStorage.getItem("length"));
+	for (var i = 0; i < len; i++)
+	{
+		events[i] = {
+			"id":localStorage.getItem("id:" + i),
+			"time":localStorage.getItem("time:" + i),
+			"description":localStorage.getItem("description:" + i),
+			"alarm":localStorage.getItem("alarm:" + i),
+		};
+	}
+	refresh();
+}
+function changeId()
+{
+	var id = parseInt(document.getElementById("id").value);
+	if (id >= events.length)
+	{
+		document.getElementById("add").innerHTML = "add";
+	}
+	else
+	{
+		var d = new Date();
+		d.setTime(parseInt(events[id]["time"]));
+		var now = new Date();
+		var diff = Math.floor((d.getTime() - now.getTime())/1000);
+		if (diff < 0)
+			diff = 0;
+		document.getElementById("hh").value = Math.floor(diff / 3600);
+		document.getElementById("mm").value = Math.floor(diff / 60) % 60;
+		document.getElementById("ss").value = diff % 60;
+		document.getElementById("msg").value = events[id]["description"];
+		document.getElementById("add").innerHTML = "modify";
+	}
+}
+function clickInput()
+{
+	setId(clickId);
+	changeId();
+	refresh();
 }
 </script>
 </head>
-<body onload="startTimer()">
-<div id="t"></div>
+<body onload="main()">
+<div>
+id:<input id="id" type="text" size="3" value="0" onchange="changeId()"></input>
+<input id="hh" type="text" size="3" value="0">hours</input>
+<input id="mm" type="text" size="3" value="0">minutes</input>
+<input id="ss" type="text" size="3" value="0">seconds</input>
+<br>
+description:<input id="msg" type="text" size="50" value="Hello World"></input>
+</div>
+<button onclick="nextInput()">next</button>
+<button onclick="cloneInput()">clone</button>
+<button id="add" onclick="addInput()">add</button>
+<button onclick="deleteInput()">delete</button>
+<button onclick="save()">save</button>
+<button onclick="load()">load</button>
+<div id="list" onclick="clickInput()"/>
 </body>
 </html>
