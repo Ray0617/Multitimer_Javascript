@@ -10,7 +10,61 @@ function makeEvent(id, ts, desc, alarm)
 }
 function main()
 {
+    if (document.addEventListener)
+    {
+	   // keypress, keydown, keyup, textinput
+       document.addEventListener("keydown", keydown, false);
+    }
+    else if (document.attachEvent)
+    {
+       document.attachEvent("onkeydown", keydown);
+    }
+    else
+    {
+       document.onkeypress= keydown;	// probably doesn't work
+    }
 	setInterval(refresh, 1000);
+}
+function selectPrev()
+{
+	var id = getId();
+	if (events.length > 0 && (id == -1 || id == 0))
+	{
+			setId(events.length - 1);
+	}
+	else 
+	{
+		setId(id - 1);
+	}
+}
+function selectNext()
+{
+	var id = getId();
+	if (events.length > 0 && (id == -1 || id == events.length - 1))
+	{
+			setId(0);
+	}
+	else 
+	{
+		setId(id + 1);
+	}
+}
+function keydown(e)
+{
+	// ref http://unixpapa.com/js/testkey.html
+	// e.keyCode, e.which, e.charCode, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey
+	switch (e.keyCode)
+	{
+		case 38:
+			selectPrev();
+			refresh();
+			break;
+		case 40:
+			selectNext();
+			refresh();
+			break;
+		default:
+	}
 }
 function getId()
 {
